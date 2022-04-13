@@ -3,7 +3,9 @@
 
     <test name="Maven">
         <classes>
-            <class name="ExcelTest"></class>
+            <class name="GET.GetMethod"></class>
+            <class name="POST.ExcelTest"></class>
+            <class name="POST.PostUser"></class>
         </classes>
     </test>
 </suite>
