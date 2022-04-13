@@ -1,4 +1,7 @@
 package GET;
+import com.aventstack.extentreports.ExtentReports;
+import com.aventstack.extentreports.ExtentTest;
+import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
@@ -24,6 +27,8 @@ public class GetMethod {
     RequestSpecification requestSpecification;
     ResponseSpecification responseSpecification;
     JSONArray jsonArray;
+    ExtentTest test;
+    ExtentReports extent;
     @BeforeTest
     void init() {
         RestAssured.useRelaxedHTTPSValidation();
@@ -36,8 +41,13 @@ public class GetMethod {
         requestSpecification = RestAssured.with().spec(reqBuilder.build());
         ResponseSpecBuilder resBuilder = new ResponseSpecBuilder().expectContentType(ContentType.JSON);
         responseSpecification = resBuilder.build();
+        ExtentHtmlReporter htmlReporter=new ExtentHtmlReporter("src\\test\\resources\\extentReports.html");
+        extent = new ExtentReports();
+        extent.attachReporter(htmlReporter);
+        test = extent.createTest("MyFirstTest", "Sample");
     }
     @Test(priority = 1)
+    //validating the gender : male or female
     public void validateGender() throws IOException {
         Response response =
                 given().
@@ -49,23 +59,25 @@ public class GetMethod {
                         extract().response();
         JSONObject obj = new JSONObject();
         for (int i = 0; i < obj.length(); i++) {
-            assert obj.get("gender") == "male" && (obj.get("gender") == "female");
+            assert obj.get("gender") == "male" || (obj.get("gender") == "female");
         }
     }
     @Test(priority = 2)
+    //validating the domain : checking whether at least 2 mail id contains ".biz" extension
     public void domainValidation() {
         int DomainExtensionCount = 0;
-        String domain_check = getProperties().getProperty("domain_check");
+        String domain_check = getProperties().getProperty(".biz");
         JSONArray jsonArray = new JSONArray();
         for (int i = 0; i < jsonArray.length(); i++) {
             Object obj = jsonArray.getJSONObject(i).get("email");
-            if (obj.toString().contains(domain_check)) {
+            if (obj.toString().contains(".biz")) {
                 DomainExtensionCount++;
                 assertThat(DomainExtensionCount, greaterThan(2));
             }
         }
     }
 @Test(priority = 3)
+//validating the id values: checking whether id values are unique or not
     public void idValidation() {
         ArrayList<Integer> id_list = new ArrayList<>();
         JSONArray jsonArray=new JSONArray();
@@ -78,10 +90,13 @@ public class GetMethod {
             } else {
                 id_list.add(id);
             }
-            assertThat(count, equalTo(1));
+            assertThat(count, equalTo(1));System.out.println("ID values are unique");
+            test.pass("ID is unique");
         }
+        test.fail("ID values are not unique");
         }
     @Test(priority = 4)
+    //validating JSON schema
     public void validateSchema(){
         Response response = given().
                 baseUri("https://gorest.co.in/public/v1").
@@ -92,7 +107,9 @@ public class GetMethod {
                         matchesJsonSchema(
                                 new File("src/main/resources/user_schema.json")))
                 .statusCode(200).contentType("application/json").extract().response();
+        jsonArray = new JSONArray(response.body().jsonPath().getList("data"));System.out.println("JSON Schema is validated");
+        test.pass("JSON Schema is validated");
 
-        jsonArray = new JSONArray(response.body().jsonPath().getList("data"));
     }
+
 }
